@@ -1,0 +1,145 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} queryPostUniverso2019User
+
+@description
+REST Cria um usuário novo com parâmetros via [querystring]
+
+@type    REST
+@method  post
+@uri     /universo2019/query/user
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+
+@return  character, String em formato JSON com resposta ao Client
+/*/
+//-------------------------------------------------------------------
+@Post("/universo2019/query/user")
+user function queryPostUniverso2019User(oRequest, oResponse)
+    local cUser := ''
+    local cPass := ''
+    local cName := ''
+    local cNick := ''
+    if ( oRequest:Query <> Nil )
+        cUser   := oRequest:Query[ 'user'       ]
+        cPass   := oRequest:Query[ 'password'   ]
+        cName   := oRequest:Query[ 'name'       ]
+        cNick   := oRequest:Query[ 'nick'       ]
+    endif
+return processPostUniverso2019User(oRequest, oResponse,cUser, cPass, cName, cNick)
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} pathPostUniverso2019User
+
+@description
+REST Cria um usuário novo com parâmetros via [pathstring]
+
+@type    REST
+@method  post
+@uri     /universo2019/path/user/:user/:password/:name/:nick
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+
+@return  character, String em formato JSON com resposta ao Client
+/*/
+//-------------------------------------------------------------------
+@Post("/universo2019/path/user/:user/:password/:name/:nick")
+user function pathPostUniverso2019User(oRequest, oResponse)
+    local cUser := ''
+    local cPass := ''
+    local cName := ''
+    local cNick := ''
+    if ( oRequest:PathParams <> Nil )
+        cUser   := oRequest:PathParams[ 'user'      ]
+        cPass   := oRequest:PathParams[ 'password'  ]
+        cName   := oRequest:PathParams[ 'name'      ]
+        cNick   := oRequest:PathParams[ 'nick'      ]
+    endif
+return processPostUniverso2019User(oRequest, oResponse, cUser, cPass, cName, cNick)
+
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} processPostUniverso2019User
+
+@description
+Função central chamada pelos modos diferentes de receber parâmetro do REST
+e faz a chamada da função que de fato irá criar um usuário na BD
+
+@type    function
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+@param	 character, cUser     , Usuário que deverá ser excluído da BD
+@param	 character, cPass     , Senha
+@param	 character, cName     , Nome
+@param	 character, cNick     , Apelido
+
+@return  character, String em formato JSON com resposta ao Client
+/*/
+//-------------------------------------------------------------------
+static function processPostUniverso2019User(oRequest, oResponse, cUser, cPass, cName, cNick)
+
+    local creturn   := ''
+    local lOK       := .T.
+    local cMsg      := ''
+
+    // Valida campo chave de busca
+        if ( cUser == Nil .or. empty(cUser) )
+            cUser     := ''
+            lOK     := .F.
+            cMsg    := 'invalid parameter: user'
+        endif
+        if ( !lOK )
+            if ( cPass == Nil .or. empty(cPass) )
+                cPass   := ''
+                lOK     := .F.
+                cMsg    += ' | password'
+            else
+                lOK     := .T.
+                cMsg    := ''
+            endif
+        endif
+
+    // Valida campos elegíveis para atualização
+        if ( lOK )
+            if ( cName == Nil )
+                cName := ''
+            endif
+            if ( cNick == Nil )
+                cNick := ''
+            endif
+        endif
+
+    if ( lOK )
+        if ( !(lOK := universo2019insertUser( cUser, cPass, cName, cNick )) )
+            cMsg := 'could not created'
+        endif
+    endif
+
+    creturn := '{ "SUCESS": "' + if(lOK,'yes','no') + '", "MESSAGE": "' + cMsg + '" }'
+
+    if ( lOK )
+        oResponse:Status = 200
+    else
+        oResponse:Status = 500
+    endif
+return oResponse:send( creturn )

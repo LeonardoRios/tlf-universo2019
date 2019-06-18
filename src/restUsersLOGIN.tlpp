@@ -1,0 +1,44 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} getUniverso2019UserLogin
+
+@description
+REST responsável pela validação de login e senha da tabela USERS
+parâmetros via [raw body]
+
+@type    REST
+@method  get
+@uri     /universo2019/user/login
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+
+@return  character, String em formato JSON com resposta ao Client
+/*/
+//-------------------------------------------------------------------
+@Get("/universo2019/user/login")
+user function getUniverso2019UserLogin(oRequest, oResponse)
+
+    local cUser     := ''
+    local cPass     := ''
+    local jBody     := ''
+    local lLogon    := .F.
+
+    if ( oRequest:Body <> Nil )
+        jBody := JsonObject():new()
+        jBody:fromJson( oRequest:Body )
+        
+        cUser   := jBody:GetJsonText("user")
+        cPass   := jBody:GetJsonText("password")
+    endif
+
+    lLogon := universo2019UserLogin( cUser, cPass )
+
+    oResponse:Status = if ( lLogon, 200, 500 )
+return oResponse:send( '{"LOGON":"'+if(lLogon,'YES','NO')+'"}' )

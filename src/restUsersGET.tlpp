@@ -1,0 +1,119 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} queryGetUniverso2019User
+
+@description
+REST Retorna dados de um usuário existente com parâmetros via [querystring]
+
+@type    REST
+@method  get
+@uri     /universo2019/query/user
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+
+@return  character, String em formato JSON com resposta ao Client
+
+/*/
+//-------------------------------------------------------------------
+@Get("/universo2019/query/user")
+user function queryGetUniverso2019User(oRequest, oResponse)
+    local cUser := ''
+    if ( oRequest:Query <> Nil )
+        cUser   := oRequest:Query[ 'user' ]
+    endif
+return processGetUniverso2019User(oRequest, oResponse,cUser)
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} pathGetUniverso2019User
+
+@description
+REST Retorna dados de um usuário existente com parâmetros via [pathstring]
+
+@type    REST
+@method  get
+@uri     /universo2019/path/user/:user
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+
+@return  character, String em formato JSON com resposta ao Client
+
+/*/
+//-------------------------------------------------------------------
+@Get("/universo2019/path/user/:user")
+user function pathGetUniverso2019User(oRequest, oResponse)
+    local cUser := ''
+    if ( oRequest:PathParams <> Nil )
+        cUser   := oRequest:PathParams[ 'user' ]
+    endif
+return processGetUniverso2019User(oRequest, oResponse, cUser)
+
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} processGetUniverso2019User
+
+@description
+Função central chamada pelos modos diferentes de receber parâmetro do REST
+e faz a chamada da função que de fato irá buscar dados do usuário na BD
+
+@type    function
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+@param	 character, cUser     , Usuário que deverá ser excluído da BD
+
+@return  character, String em formato JSON com resposta ao Client
+
+/*/
+//-------------------------------------------------------------------
+static function processGetUniverso2019User(oRequest, oResponse, cUser)
+
+    local creturn   := ''
+    local lOK       := .T.
+    local cMsg      := ''
+    local aUser     := {}
+
+    // Valida campo chave de busca
+        if ( cUser == Nil .or. empty(cUser) )
+            cUser     := ''
+            lOK     := .F.
+            cMsg    := 'invalid parameter: user'
+        endif
+
+    if ( lOK )
+        aUser := universo2019getUser( cUser )
+
+        if ( len(aUser) == 4 )
+            lOK  := .T.
+            creturn := '{ "SUCESS": "yes", "ID": "' + aUser[1] + '", "NAME": "' + aUser[2] + '", "NICK": "' + aUser[3] + '", "USER": "' + aUser[4] + '" }'
+        else
+            lOK  := .F.
+            cMsg := 'could not found'
+            creturn := '{ "SUCESS": "' + if(lOK,'yes','no') + '", "MESSAGE": "' + cMsg + '" }'
+        endif
+    endif
+
+    if ( lOK )
+        oResponse:Status = 200
+    else
+        oResponse:Status = 500
+    endif
+return oResponse:send( creturn )

@@ -1,0 +1,158 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} bodyPutUniverso2019User
+
+@description
+REST altera um usuário com parâmetros via [raw body]
+
+@type    REST
+@method  put
+@uri     /universo2019/query/user
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+
+@return  character, String em formato JSON com resposta ao Client
+/*/
+//-------------------------------------------------------------------
+@Put("/universo2019/query/user")
+user function bodyPutUniverso2019User(oRequest, oResponse)
+    local cID   := ''
+    local cUser := ''
+    local cName := ''
+    local cNick := ''
+    local jBody := ''
+
+    jBody := JsonObject():new()
+    jBody:fromJson( oRequest:Body )
+    
+    if ( jBody <> Nil )
+        cID     := jBody:GetJsonText("id"  )
+        cUser   := jBody:GetJsonText("user")
+        cName   := jBody:GetJsonText("name")
+        cNick   := jBody:GetJsonText("nick")
+    endif
+return processPutUniverso2019User(oRequest, oResponse, cID, cUser, cName, cNick)
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} pathPutUniverso2019User
+
+@description
+REST altera um usuário com parâmetros via [pathstring]
+
+@type    REST
+@method  put
+@uri     /universo2019/path/user/:user/:name/:nick
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+
+@return  character, String em formato JSON com resposta ao Client
+/*/
+//-------------------------------------------------------------------
+@Put("/universo2019/path/user/:user/:name/:nick")
+user function pathPutUniverso2019User(oRequest, oResponse)
+    local cID   := ''
+    local cUser := ''
+    local cName := ''
+    local cNick := ''
+    if ( oRequest:PathParams <> Nil )
+        cUser   := oRequest:PathParams[ 'user'   ]
+        cName   := oRequest:PathParams[ 'name'   ]
+        cNick   := oRequest:PathParams[ 'nick'   ]
+    endif
+return processPutUniverso2019User(oRequest, oResponse, cID, cUser, cName, cNick)
+
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} processPutUniverso2019User
+
+@description
+Função central chamada pelos modos diferentes de receber parâmetro do REST
+e faz a chamada da função que de fato irá alterar um usuário na BD
+
+@type    function
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+@param	 character, cID       , ID
+@param	 character, cUser     , Usuário que deverá ser excluído da BD
+@param	 character, cName     , Nome
+@param	 character, cNick     , Apelido
+
+@return  character, String em formato JSON com resposta ao Client
+/*/
+//-------------------------------------------------------------------
+static function processPutUniverso2019User(oRequest, oResponse, cID, cUser, cName, cNick)
+
+    local creturn   := ''
+    local lOK       := .T.
+    local cMsg      := ''
+
+    // Valida campo chave de busca
+        if ( cID == Nil .or. empty(cID) )
+            cID     := ''
+            lOK     := .F.
+            cMsg    := 'invalid parameter: id'
+        endif
+        if ( !lOK )
+            if ( cUser == Nil .or. empty(cUser) )
+                cUser   := ''
+                lOK     := .F.
+                cMsg    += ' | user'
+            else
+                lOK     := .T.
+                cMsg    := ''
+            endif
+        endif
+
+    // Valida campos elegíveis para atualização
+        if ( lOK )
+            if ( cName == Nil )
+                cName := ''
+            endif
+            if ( cNick == Nil )
+                cNick := ''
+            endif
+            if ( empty(cName) .and. empty(cNick) )
+                lOK   := .F.
+                cMsg  := 'no data were reported for change'
+            endif
+        endif
+
+    if ( lOK )
+        if ( cID <> Nil .and. !empty(cID) )
+            lOK := universo2019alteraUserByID( cID, cName, cNick )
+        else
+            lOK := universo2019alteraUserByUser( cUser, cName, cNick )
+        endif
+        if ( !lOK )
+            cMsg := 'could not record'
+        endif
+    endif
+
+    creturn := '{ "SUCESS": "' + if(lOK,'yes','no') + '", "MESSAGE": "' + cMsg + '" }'
+
+    if ( lOK )
+        oResponse:Status = 200
+    else
+        oResponse:Status = 500
+    endif
+return oResponse:send( creturn )

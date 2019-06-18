@@ -1,0 +1,118 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} queryDeleteUniverso2019User
+
+@description
+REST deleta um usuário com parâmetros via [querystring]
+
+@type    REST
+@method  delete
+@uri     /universo2019/query/user
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+
+@return  character, String em formato JSON com resposta ao Client
+
+/*/
+//-------------------------------------------------------------------
+@Delete("/universo2019/query/user")
+user function queryDeleteUniverso2019User(oRequest, oResponse)
+    local cUser := ''
+    local jBody := ''
+
+    if ( oRequest:Body <> Nil )
+        jBody := JsonObject():new()
+        jBody:fromJson( oRequest:Body )
+    
+        cUser   := jBody:GetJsonText("user")
+    endif
+return processDeleteUniverso2019User(oRequest, oResponse,cUser)
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} pathDeleteUniverso2019User
+
+@description
+REST deleta um usuário com parâmetros via [pathstring]
+
+@type    REST
+@method  delete
+@uri     /universo2019/path/user/:user
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+
+@return  character, String em formato JSON com resposta ao Client
+
+/*/
+//-------------------------------------------------------------------
+@Delete("/universo2019/path/user/:user")
+user function pathDeleteUniverso2019User(oRequest, oResponse)
+    local cUser := ''
+    if ( oRequest:PathParams <> Nil )
+        cUser   := oRequest:PathParams[ 'user' ]
+    endif
+return processDeleteUniverso2019User(oRequest, oResponse, cUser)
+
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} processDeleteUniverso2019User
+
+@description
+Função central chamada pelos modos diferentes de receber parâmetro do REST
+e faz a chamada da função que de fato irá excluir o usuário na BD
+
+@type    function
+
+@author  TOTVS-TEC-TLPP
+@since   06/2019
+@version 1.0
+
+@param	 object   , oRequest  , Objeto contendo dados enviados pelo Client ao REST
+@param	 object   , oResponse , Objeto contendo dados que serão retornados ao Cliente pelo REST
+@param	 character, cUser     , Usuário que deverá ser excluído da BD
+
+@return  character, String em formato JSON com resposta ao Client
+
+/*/
+//-------------------------------------------------------------------
+static function processDeleteUniverso2019User(oRequest, oResponse, cUser)
+
+    local creturn   := ''
+    local lOK       := .T.
+    local cMsg      := ''
+
+    // Valida campo chave de busca
+        if ( cUser == Nil .or. empty(cUser) )
+            cUser     := ''
+            lOK     := .F.
+            cMsg    := 'invalid parameter: user'
+        endif
+
+    if ( lOK )
+        if ( !(lOK := universo2019deleteUser( cUser )) )
+            cMsg := 'could not deleted'
+        endif
+    endif
+
+    creturn := '{ "SUCESS": "' + if(lOK,'yes','no') + '", "MESSAGE": "' + cMsg + '" }'
+
+    if ( lOK )
+        oResponse:Status = 200
+    else
+        oResponse:Status = 500
+    endif
+return oResponse:send( creturn )
